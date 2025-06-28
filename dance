@@ -1,25 +1,94 @@
+-- LINE 1: Get the ReplicatedStorage service
+-- PRINCIPLE: Services are Roblox's built-in systems that provide functionality
+-- WHY: ReplicatedStorage is where you put things that both server and client need access to
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- LINE 2: Load the SoundConfig module we saw earlier
+-- PRINCIPLE: require() loads and runs another script, returning what that script returned
+-- WHY: Instead of copying sound code everywhere, we reuse the organized SoundConfig module
 local SoundConfig = require(ReplicatedStorage.SoundConfigs)
+
+-- LINE 3: Get reference to the part this script is attached to
+-- PRINCIPLE: script.Parent refers to whatever object contains this script
+-- WHY: This script is probably inside a part, and we need to reference that part
 local touchMe = script.Parent
+
+-- LINE 4: Get the Sound object that's inside the part
+-- PRINCIPLE: Parts can contain other objects like sounds, and we access them by name
+-- WHY: We need to control this specific sound object
 local sound = touchMe.TacosSound
 
-
--- sound configuration
+-- LINES 5-7: Configure the sound using our module (though this is redundant)
+-- PRINCIPLE: Setting properties directly vs using functions
+-- WHY: This manually sets up the sound, but it's unnecessary since SoundConfig:PlaySound() does this
 sound.SoundId = SoundConfig.SoundIDs.TacosSound
 sound.Volume = SoundConfig.Volume.TacosSound
 
--- color change effect
+-- LINE 8: Create a flag to track if sound has played
+-- PRINCIPLE: Boolean flags for state tracking
+-- WHY: We only want the sound to play once, so we track whether it's already played
+local hasPlayed = false
+
+-- LINE 9: Create a debounce flag to prevent rapid triggering
+-- PRINCIPLE: Debouncing prevents function spam
+-- WHY: Without this, the color change could happen multiple times per second
+local debounce = false
+
+-- LINE 10: Connect a function to the Touched event
+-- PRINCIPLE: Event-driven programming - code runs when something happens
+-- WHY: We want something to happen when a player touches this part
 local character = touchMe.Touched:Connect(function(otherPart)
+	-- LINE 11: Debug print to see what's touching the part
+	-- PRINCIPLE: Debugging with print statements
+	-- WHY: Helps you understand what's happening - you'll see this in the output
 	print(otherPart)
-	sound:Play()
 
-	if otherPart.Name == "Right Leg" or otherPart.Name == "Left Leg" then
-		local aR = math.random(0, 255)
-		local bG = math.random(0, 255)
-		local cB = math.random(0, 255)
+-- LINES 12-16: Sound cooldown logic
+-- PRINCIPLE: One-time execution using boolean flags
+-- WHY: We only want the sound to play once, ever
+if not hasPlayed then          -- If the sound hasn't played yet
+	sound:Play()               -- Play the sound
+	hasPlayed = true           -- Mark that it has now played
+end
+
+-- LINE 17: Try to find a Humanoid in the touching object's parent
+-- PRINCIPLE: Player detection - players have Humanoids, random objects don't
+-- WHY: We only want players to trigger the color change, not random parts
+local humanoid = otherPart.Parent:FindFirstChild("Humanoid")
+
+	-- LINE 18: Complex condition check
+	-- PRINCIPLE: Multiple conditions with logical operators
+	-- WHY: We want to ensure: not in cooldown AND player exists AND it's a leg part
+	if not debounce and humanoid and otherPart.Name == "Right Leg" or otherPart.Name == "Left Leg" then
+		-- NOTE: This logic has a bug! It should be:
+		-- if not debounce and humanoid and (otherPart.Name == "Right Leg" or otherPart.Name == "Left Leg") then
 		
-
+		-- LINE 19: Set debounce to prevent immediate re-triggering
+		-- PRINCIPLE: Cooldown mechanism
+		-- WHY: Prevents the color from changing constantly while player is touching
+		debounce = true
+		
+		-- LINES 21-23: Generate random RGB color values
+		-- PRINCIPLE: Random number generation for variety
+		-- WHY: Creates a different color each time (0-255 is the RGB range)
+		local aR = math.random(0, 255)  -- Random red value
+		local bG = math.random(0, 255)  -- Random green value
+		local cB = math.random(0, 255)  -- Random blue value
+		
+		-- LINE 24: Apply the random color to the part
+		-- PRINCIPLE: Color3.fromRGB converts RGB numbers to Roblox color format
+		-- WHY: This actually changes the part's appearance
 		touchMe.Color = Color3.fromRGB(aR, bG, cB)
+		
+		-- LINE 25: Wait 2 seconds
+		-- PRINCIPLE: task.wait() pauses execution
+		-- WHY: Creates a cooldown period before the effect can trigger again
 		task.wait(2)
+		
+		-- LINE 26: Reset the debounce flag
+		-- PRINCIPLE: Cooldown reset
+		-- WHY: Now the color change can happen again
+		debounce = false
 	end
+-- LINE 27: End the function
 end)
