@@ -1,1 +1,47 @@
+-- LINE 1: Create a new empty table called SoundConfig
+-- Tables in Lua are like containers that can hold multiple pieces of data
+local SoundConfig = {}
 
+-- LINES 2-5: Create a nested table inside SoundConfig to store sound IDs
+-- This is like creating a folder inside SoundConfig specifically for sound IDs
+SoundConfig.SoundIDs = {
+	-- Each sound gets a name and a Roblox asset ID (these are real Roblox sound assets)
+	TacosSound = "rbxassetid://142376088",  -- A taco-related sound effect
+	BurnSound = "rbxassetid://298181829"   -- A burning sound effect
+	-- Note: rbxassetid:// tells Roblox to load an asset from their catalog
+}
+
+-- LINES 6-9: Create another nested table to store volume levels for each sound
+-- Volume ranges from 0 (silent) to 1 (loudest)
+SoundConfig.Volume = {
+	TacosSound = 0.5,  -- Medium volume (50%)
+	BurnSound = 0.7    -- Louder volume (70%)
+}
+
+-- LINES 10-18: Define a function (method) that belongs to the SoundConfig table
+-- The colon (:) syntax automatically passes 'self' as the first parameter
+-- 'self' refers to the SoundConfig table itself
+function SoundConfig:PlaySound(soundObject, soundName)
+	-- LINE 11: Check if the requested sound name exists in our SoundIDs table
+	-- self.SoundIDs[soundName] looks up the sound name in our list
+	if self.SoundIDs[soundName] then
+		-- LINE 12: Set the SoundId property of the sound object to our stored ID
+		-- This tells the sound object which audio file to play
+		soundObject.SoundId = self.SoundIDs[soundName]
+		
+		-- LINE 13: Set the volume using our stored volume or default to 0.5
+		-- The 'or 0.5' means "if no volume is found, use 0.5 instead"
+		soundObject.Volume = self.Volume[soundName] or 0.5
+		
+		-- LINE 14: Actually play the sound
+		soundObject:Play()
+	else
+		-- LINES 15-16: If the sound name doesn't exist, show a warning message
+		-- This helps with debugging - you'll see this message in the output window
+		warn("Sound not found:" ..soundName)  -- '..' combines/concatenates strings
+	end
+end
+
+-- LINE 19: Return the SoundConfig table so other scripts can use it
+-- This is how you make a "module" that other scripts can require() and use
+return SoundConfig
