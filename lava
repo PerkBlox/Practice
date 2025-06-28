@@ -1,1 +1,107 @@
 
+-- LINE 1: Get reference to the part this script is attached to
+-- PRINCIPLE: script.Parent is the standard way to reference the containing object
+-- WHY: This script needs to detect when players touch THIS specific part
+local touchMe1 = script.Parent
+
+-- LINE 2: Get the Players service
+-- PRINCIPLE: Services provide access to Roblox's built-in functionality
+-- WHY: We need Players service to identify which player touched the part
+local Players = game:GetService("Players")
+
+-- LINE 3: Create a table to track which players are on cooldown
+-- PRINCIPLE: Dictionary/table for tracking multiple states
+-- WHY: We want each player to have their own individual cooldown, not a global one
+local playerOnCooldown = {}
+
+-- LINE 4: Get ReplicatedStorage service
+-- PRINCIPLE: Same as before - accessing shared resources
+-- WHY: Our SoundConfig module is stored in ReplicatedStorage
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- LINE 5: Load the SoundConfig module
+-- PRINCIPLE: Code reusability through modules
+-- WHY: Instead of hardcoding sound IDs, we use our organized sound system
+local SoundConfig = require(ReplicatedStorage.SoundConfigs)
+
+-- LINE 6: Get the specific sound object from the part
+-- PRINCIPLE: Object hierarchy navigation
+-- WHY: We need to control the BurnSound that's inside this part
+local sound = touchMe1.BurnSound
+
+-- LINES 7-9: Configure the sound (redundant but explicit)
+-- PRINCIPLE: Direct property assignment
+-- WHY: Manually setting up sound properties (though SoundConfig:PlaySound() would do this)
+sound.SoundId = SoundConfig.SoundIDs.BurnSound
+sound.Volume = SoundConfig.Volume.BurnSound
+
+-- LINE 10: Comment explaining the purpose
+-- PRINCIPLE: Code documentation
+-- WHY: Makes it clear this section handles damaging players
+
+-- LINE 11: Connect function to the Touched event
+-- PRINCIPLE: Event-driven programming
+-- WHY: We want something to happen when a player touches this part
+local player = touchMe1.Touched:Connect(function(plr)
+	-- NOTE: Variable name 'plr' is confusing - it's actually the body part that touched, not the player
+	
+	-- LINE 12: Get the character (player's avatar) from the touching part
+	-- PRINCIPLE: Parent-child relationship navigation
+	-- WHY: Body parts belong to characters, so plr.Parent gives us the character model
+	local character = plr.Parent
+	
+	-- LINE 13: Try to find the Humanoid in the character
+	-- PRINCIPLE: Safe object searching with FindFirstChild
+	-- WHY: Only player characters have Humanoids; this filters out non-player objects
+	local humanoid = plr.Parent:FindFirstChild("Humanoid")
+	
+	-- LINE 14: Get the actual Player object from the character
+	-- PRINCIPLE: Character-to-Player conversion
+	-- WHY: We need the Player object to access UserId and Name properties
+	local player = Players:GetPlayerFromCharacter(character)
+
+-- LINE 15: Check if we found both humanoid and player
+-- PRINCIPLE: Defensive programming - verify objects exist before using them
+-- WHY: Prevents errors if a non-player object touches the part
+if humanoid and player then
+	-- LINE 16: Check if this specific player is NOT on cooldown
+	-- PRINCIPLE: Individual player tracking using UserId as key
+	-- WHY: Each player should have their own cooldown, UserId is unique per player
+	if not playerOnCooldown[player.UserId] then
+		-- LINE 17: Damage the player (reduce health by 10%)
+		-- PRINCIPLE: Mathematical health reduction
+		-- WHY: Multiplying by 0.9 = keeping 90% = losing 10%
+		humanoid.Health = humanoid.Health * 0.9
+		
+		-- LINE 18: Play the burn sound effect
+		-- PRINCIPLE: Audio feedback for game events
+		-- WHY: Gives players immediate feedback that they took damage
+		sound:Play()
+		
+		-- LINE 19: Debug message showing what happened
+		-- PRINCIPLE: Logging for debugging and monitoring
+		-- WHY: Helps developers see when damage occurs and to whom
+		print("Damaged" .. player.Name .. "for 10% of their health.")
+		
+		-- LINE 20: Put this player on cooldown
+		-- PRINCIPLE: State tracking to prevent spam
+		-- WHY: Prevents continuous damage while player remains touching the part
+		playerOnCooldown[player.UserId] = true
+		
+		-- LINES 22-27: Asynchronous cooldown reset
+		-- PRINCIPLE: Non-blocking timer using task.spawn
+		-- WHY: We want to reset cooldown after 2 seconds WITHOUT freezing the main script
+		task.spawn(function()
+			task.wait(2)                              -- Wait 2 seconds
+			playerOnCooldown[player.UserId] = nil     -- Remove from cooldown table
+			print(player.Name .. "is off cooldown!") -- Debug message
+		end)
+	else
+		-- LINES 28-29: Handle players already on cooldown
+		-- PRINCIPLE: User feedback for denied actions
+		-- WHY: Lets us know when the cooldown system is working
+		print(player.Name .. "is still on cooldown!")
+		end
+	end
+-- LINE 30: End the function
+end)
