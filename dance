@@ -1,0 +1,25 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundConfig = require(ReplicatedStorage.SoundConfigs)
+local touchMe = script.Parent
+local sound = touchMe.TacosSound
+
+
+-- sound configuration
+sound.SoundId = SoundConfig.SoundIDs.TacosSound
+sound.Volume = SoundConfig.Volume.TacosSound
+
+-- color change effect
+local character = touchMe.Touched:Connect(function(otherPart)
+	print(otherPart)
+	sound:Play()
+
+	if otherPart.Name == "Right Leg" or otherPart.Name == "Left Leg" then
+		local aR = math.random(0, 255)
+		local bG = math.random(0, 255)
+		local cB = math.random(0, 255)
+		
+
+		touchMe.Color = Color3.fromRGB(aR, bG, cB)
+		task.wait(2)
+	end
+end)
